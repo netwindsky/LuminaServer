@@ -638,8 +638,6 @@ public class SignalingHandler {
                                activeSessions, totalMessages, totalOffers, totalAnswers, totalCandidates);
         }
     }
-}
-
     /**
      * 获取消息类型的字符串表示
      * @param type 消息类型
@@ -648,3 +646,5 @@ public class SignalingHandler {
     private String getMessageTypeString(SignalingMessage.Type type) {
         return type.toString();
     }
+}
+

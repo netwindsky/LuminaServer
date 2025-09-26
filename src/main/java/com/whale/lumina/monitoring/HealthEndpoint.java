@@ -913,42 +913,7 @@ public class HealthEndpoint {
                                alive, message, issues, timestamp);
         }
     }
+
 }
 
 
-/**
- * 健康状态枚举
- */
-public enum HealthStatus {
-    UP("正常"),
-    DOWN("异常");
-    
-    private final String description;
-    
-    HealthStatus(String description) {
-        this.description = description;
-    }
-    
-    public String getDescription() {
-        return description;
-    }
-}
-
-
-/**
- * 健康状态枚举
- */
-public enum HealthStatus {
-    UP("服务正常运行"),
-    DOWN("服务不可用");
-
-    private final String description;
-
-    HealthStatus(String description) {
-        this.description = description;
-    }
-
-    public String getDescription() {
-        return description;
-    }
-}

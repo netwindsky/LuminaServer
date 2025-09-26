@@ -20,6 +20,7 @@ public final class ErrorCodes {
     // 成功
     public static final String SUCCESS = "0000";
 
+
     // ========== 认证模块错误 (1000-1999) ==========
     public static final String AUTH_INVALID_TOKEN = "1001";
     public static final String AUTH_TOKEN_EXPIRED = "1002";
@@ -128,6 +129,10 @@ public final class ErrorCodes {
     public static final String SYSTEM_CONFIGURATION_ERROR = "9005";
     public static final String SYSTEM_ERROR = "9006";
 
+
+    // 信令相关错误
+//    public static final int INVALID_PARAMETER = 4001;
+//    public static final int INTERNAL_ERROR = 4002;
     // 错误码描述映射
     public static String getErrorMessage(String errorCode) {
         switch (errorCode) {
@@ -345,6 +350,4 @@ public final class ErrorCodes {
     }
 }
 
-    // 信令相关错误
-    public static final int INVALID_PARAMETER = 4001;
-    public static final int INTERNAL_ERROR = 4002;
+

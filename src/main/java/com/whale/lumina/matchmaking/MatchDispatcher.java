@@ -222,12 +222,14 @@ public class MatchDispatcher {
             RoomConfig roomConfig = createRoomConfig(matchResult);
             // 获取第一个玩家作为房间创建者
             String creatorId = matchResult.getPlayerIds().get(0);
-            String roomId = roomManager.createRoom(creatorId, roomConfig);
-            
-            logger.debug("为匹配创建房间: matchId={}, roomId={}", 
-                        matchResult.getMatchId(), roomId);
-            
-            return roomId;
+            // 获取第一个玩家作为房间创建者
+            String creatorId = matchResult.getPlayerIds().get(0);
+            Room room = roomManager.createRoom(creatorId, roomConfig);
+
+            logger.debug("为匹配创建房间: matchId={}, roomId={}",
+                    matchResult.getMatchId(), room.getRoomId());
+
+            return room.getRoomId();
             
         } catch (Exception e) {
             logger.error("创建游戏房间失败: matchId={}", matchResult.getMatchId(), e);
