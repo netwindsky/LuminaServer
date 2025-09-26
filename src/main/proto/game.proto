@@ -1,0 +1,112 @@
+syntax = "proto3";
+
+package game;
+
+option java_package = "com.whale.lumina.proto";
+option java_outer_classname = "GameProtos";
+
+// RPC 请求/响应
+message RpcRequest {
+  int32 method_id = 1;
+  bytes payload = 2;
+  int64 timestamp = 3;
+  string trace_id = 4;
+}
+
+message RpcResponse {
+  bool success = 1;
+  bytes result = 2;
+  string error_code = 3;
+  string error_message = 4;
+  int64 timestamp = 5;
+}
+
+// 登录相关
+message LoginRequest {
+  string username = 1;
+  string token = 2;
+  string client_version = 3;
+}
+
+message LoginResponse {
+  bool success = 1;
+  string player_id = 2;
+  string session_id = 3;
+  string error_message = 4;
+}
+
+// 匹配相关
+message MatchRequest {
+  string player_id = 1;
+  string mode = 2;
+  int32 rank = 3;
+}
+
+message MatchResponse {
+  bool success = 1;
+  string ticket_id = 2;
+  string error_message = 3;
+}
+
+message MatchResult {
+  string room_id = 1;
+  repeated string player_ids = 2;
+  string server_address = 3;
+}
+
+// 玩家输入
+message PlayerInput {
+  string player_id = 1;
+  int32 seq = 2;
+  float dx = 3;
+  float dy = 4;
+  int32 action_type = 5;
+  int64 timestamp = 6;
+}
+
+// 玩家状态
+message PlayerState {
+  string player_id = 1;
+  float x = 2;
+  float y = 3;
+  float health = 4;
+  int32 level = 5;
+  int64 last_update = 6;
+}
+
+// 房间状态
+message RoomState {
+  string room_id = 1;
+  repeated PlayerState players = 2;
+  int64 tick = 3;
+  int32 status = 4; // 0: waiting, 1: playing, 2: finished
+}
+
+// 服务端广播
+message ServerUpdate {
+  int64 tick = 1;
+  RoomState room_state = 2;
+  repeated PlayerInput inputs = 3;
+}
+
+// WebRTC 信令
+message SignalingMessage {
+  string type = 1; // offer, answer, ice-candidate
+  string from_player = 2;
+  string to_player = 3;
+  string room_id = 4;
+  string sdp = 5;
+  string candidate = 6;
+  int64 timestamp = 7;
+}
+
+// 心跳
+message HeartbeatRequest {
+  string player_id = 1;
+  int64 timestamp = 2;
+}
+
+message HeartbeatResponse {
+  int64 server_timestamp = 1;
+  int32 ping = 2;
+}

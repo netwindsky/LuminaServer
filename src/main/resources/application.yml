@@ -1,0 +1,130 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: lumina-server
+  profiles:
+    active: dev
+
+# 游戏服务器配置
+lumina:
+  gateway:
+    port: 9090
+    max-connections: 10000
+    idle-timeout: 30
+    heartbeat-interval: 10
+  
+  redis:
+    host: localhost
+    port: 6379
+    database: 0
+    timeout: 3000
+    pool:
+      max-active: 100
+      max-idle: 20
+      min-idle: 5
+  
+  mysql:
+    url: jdbc:mysql://localhost:3306/lumina_game?useSSL=false&serverTimezone=UTC&characterEncoding=utf8
+    username: root
+    password: password
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    pool:
+      maximum-pool-size: 20
+      minimum-idle: 5
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+  
+  webrtc:
+    stun-servers:
+      - stun:stun.l.google.com:19302
+      - stun:stun1.l.google.com:19302
+    turn-servers:
+      - turn:localhost:3478
+    ice-timeout: 10000
+    negotiation-timeout: 15000
+  
+  match:
+    queue-timeout: 60
+    max-players-per-room: 8
+    min-players-per-room: 2
+  
+  room:
+    tick-rate: 20
+    max-rooms: 1000
+    room-timeout: 300
+  
+  anticheat:
+    max-input-rate: 30
+    max-speed: 10.0
+    position-tolerance: 1.0
+
+logging:
+  level:
+    com.whale.lumina: DEBUG
+    org.apache.mina: INFO
+    redis.clients.jedis: WARN
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+  file:
+    name: logs/lumina-server.log
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,metrics,prometheus
+  endpoint:
+    health:
+      show-details: always
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+
+---
+# 开发环境配置
+spring:
+  config:
+    activate:
+      on-profile: dev
+  
+lumina:
+  redis:
+    host: localhost
+    port: 6379
+  mysql:
+    url: jdbc:mysql://localhost:3306/lumina_game_dev?useSSL=false&serverTimezone=UTC&characterEncoding=utf8
+    username: root
+    password: password
+
+logging:
+  level:
+    com.whale.lumina: DEBUG
+
+---
+# 生产环境配置
+spring:
+  config:
+    activate:
+      on-profile: prod
+
+lumina:
+  gateway:
+    max-connections: 50000
+  redis:
+    host: ${REDIS_HOST:localhost}
+    port: ${REDIS_PORT:6379}
+    password: ${REDIS_PASSWORD:}
+  mysql:
+    url: ${MYSQL_URL:jdbc:mysql://localhost:3306/lumina_game}
+    username: ${MYSQL_USERNAME:root}
+    password: ${MYSQL_PASSWORD:password}
+
+logging:
+  level:
+    com.whale.lumina: INFO
+    root: WARN
