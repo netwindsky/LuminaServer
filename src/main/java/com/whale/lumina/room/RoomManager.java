@@ -121,7 +121,7 @@ public class RoomManager {
             throw e;
         } catch (Exception e) {
             logger.error("创建房间异常: creatorId={}", creatorId, e);
-            throw new GameException(ErrorCodes.ROOM_CREATION_FAILED, e);
+            throw new GameException(ErrorCodes.ROOM_CREATE_FAILED, e);
         }
     }
 
@@ -284,6 +284,15 @@ public class RoomManager {
         } catch (Exception e) {
             logger.error("销毁房间异常: roomId={}", roomId, e);
         }
+    }
+
+    /**
+     * 移除房间（destroyRoom的别名）
+     * 
+     * @param roomId 房间ID
+     */
+    public void removeRoom(String roomId) {
+        destroyRoom(roomId);
     }
 
     // ========== 房间查询 ==========

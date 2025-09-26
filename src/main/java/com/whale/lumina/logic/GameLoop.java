@@ -43,8 +43,13 @@ public class GameLoop {
     private final AtomicLong totalFramesProcessed;
     private final AtomicLong totalGameLoops;
 
+    // 单个房间的游戏循环实例
+    private Room room;
+    private String currentLoopId;
+    private GameLoopInstance currentInstance;
+
     /**
-     * 构造函数
+     * 默认构造函数
      */
     public GameLoop() {
         this.gameLoopExecutor = Executors.newScheduledThreadPool(DEFAULT_THREAD_POOL_SIZE, 
@@ -56,6 +61,79 @@ public class GameLoop {
         this.nextLoopId = new AtomicLong(1);
         this.totalFramesProcessed = new AtomicLong(0);
         this.totalGameLoops = new AtomicLong(0);
+    }
+
+    /**
+     * 构造函数（用于单个房间）
+     * 
+     * @param room 房间对象
+     */
+    public GameLoop(Room room) {
+        this();
+        this.room = room;
+    }
+
+    // ========== 单个房间的游戏循环方法 ==========
+
+    /**
+     * 启动游戏循环
+     */
+    public void start() {
+        if (room == null) {
+            throw new IllegalStateException("房间对象不能为空");
+        }
+        
+        try {
+            currentLoopId = startGameLoop(room);
+            currentInstance = activeLoops.get(currentLoopId);
+        } catch (GameException e) {
+            logger.error("启动游戏循环失败", e);
+            throw new RuntimeException("启动游戏循环失败", e);
+        }
+    }
+
+    /**
+     * 停止游戏循环
+     */
+    public void stop() {
+        if (currentLoopId != null) {
+            try {
+                stopGameLoop(currentLoopId);
+                currentLoopId = null;
+                currentInstance = null;
+            } catch (GameException e) {
+                logger.error("停止游戏循环失败", e);
+                throw new RuntimeException("停止游戏循环失败", e);
+            }
+        }
+    }
+
+    /**
+     * 暂停游戏循环
+     */
+    public void pause() {
+        if (currentLoopId != null) {
+            try {
+                pauseGameLoop(currentLoopId);
+            } catch (GameException e) {
+                logger.error("暂停游戏循环失败", e);
+                throw new RuntimeException("暂停游戏循环失败", e);
+            }
+        }
+    }
+
+    /**
+     * 恢复游戏循环
+     */
+    public void resume() {
+        if (currentLoopId != null) {
+            try {
+                resumeGameLoop(currentLoopId);
+            } catch (GameException e) {
+                logger.error("恢复游戏循环失败", e);
+                throw new RuntimeException("恢复游戏循环失败", e);
+            }
+        }
     }
 
     // ========== 游戏循环管理 ==========

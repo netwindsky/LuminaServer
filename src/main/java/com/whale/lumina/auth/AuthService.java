@@ -248,12 +248,12 @@ public class AuthService {
      * @param username 用户名
      * @return 用户信息
      */
-    private UserInfo getUserInfo(String username) {
+        private UserInfo getUserInfo(String username) {
         try {
             String sql = "SELECT user_id, username, password_hash, salt, email, status, " +
                         "created_time, last_login_time FROM users WHERE username = ?";
-            
-            return mysqlClient.queryForObject(sql, new Object[]{username}, (rs, rowNum) -> {
+
+            return mysqlClient.queryForObject(sql, (rs, rowNum) -> {
                 UserInfo userInfo = new UserInfo();
                 userInfo.setUserId(rs.getString("user_id"));
                 userInfo.setUsername(rs.getString("username"));
@@ -264,13 +264,14 @@ public class AuthService {
                 userInfo.setCreatedTime(rs.getLong("created_time"));
                 userInfo.setLastLoginTime(rs.getLong("last_login_time"));
                 return userInfo;
-            });
-            
+            }, username);
+
         } catch (Exception e) {
             logger.error("查询用户信息失败: username={}", username, e);
             return null;
         }
     }
+
 
     /**
      * 更新用户最后登录时间

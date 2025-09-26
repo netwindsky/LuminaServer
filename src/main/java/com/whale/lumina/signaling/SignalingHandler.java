@@ -444,6 +444,17 @@ public class SignalingHandler {
     // ========== 统计信息 ==========
 
     /**
+     * 获取活跃连接数量
+     * 
+     * @return 活跃连接数量
+     */
+    public int getActiveConnections() {
+        return activeSessions.values().stream()
+                .mapToInt(session -> session.getParticipants().size())
+                .sum();
+    }
+
+    /**
      * 获取活跃会话数量
      * 
      * @return 活跃会话数量

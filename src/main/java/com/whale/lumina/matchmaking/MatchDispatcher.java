@@ -220,7 +220,9 @@ public class MatchDispatcher {
     private String createGameRoom(MatchResult matchResult) {
         try {
             RoomConfig roomConfig = createRoomConfig(matchResult);
-            String roomId = roomManager.createRoom(roomConfig);
+            // 获取第一个玩家作为房间创建者
+            String creatorId = matchResult.getPlayerIds().get(0);
+            String roomId = roomManager.createRoom(creatorId, roomConfig);
             
             logger.debug("为匹配创建房间: matchId={}, roomId={}", 
                         matchResult.getMatchId(), roomId);
@@ -299,10 +301,11 @@ public class MatchDispatcher {
                 String playerId = request.getPlayerId();
                 
                 // 通过WebSocket发送实时通知
-                webSocketManager.sendToUser(playerId, "match_found", notification);
+                webSocketManager.sendMessageToUser(playerId, notification.toJson());
                 
                 // 发送推送通知
-                notificationService.sendMatchFoundNotification(playerId, notification);
+                notificationService.sendNotification(playerId, NotificationService.NotificationType.MATCH_FOUND, 
+                    "匹配成功！正在进入游戏房间...", Map.of("notification", notification));
                 
                 logger.debug("已通知玩家匹配结果: playerId={}, matchId={}", 
                            playerId, matchResult.getMatchId());
@@ -656,6 +659,19 @@ public class MatchDispatcher {
         private int qualityScore;
         private int estimatedWaitTime;
         private LocalDateTime expireTime;
+
+        /**
+         * 转换为JSON字符串
+         */
+        public String toJson() {
+            try {
+                com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper();
+                mapper.registerModule(new com.fasterxml.jackson.datatype.jsr310.JavaTimeModule());
+                return mapper.writeValueAsString(this);
+            } catch (Exception e) {
+                throw new RuntimeException("序列化MatchNotification失败", e);
+            }
+        }
 
         // Getters and Setters
         public String getMatchId() { return matchId; }

@@ -94,8 +94,14 @@ public class NetServer extends IoHandlerAdapter {
             // 配置会话
             acceptor.getSessionConfig().setReadBufferSize(bufferSize);
             acceptor.getSessionConfig().setIdleTime(IdleStatus.BOTH_IDLE, idleTimeout);
-            acceptor.getSessionConfig().setKeepAlive(true);
-            acceptor.getSessionConfig().setTcpNoDelay(true);
+            
+            // 配置Socket特定选项
+            if (acceptor.getSessionConfig() instanceof org.apache.mina.transport.socket.SocketSessionConfig) {
+                org.apache.mina.transport.socket.SocketSessionConfig socketConfig = 
+                    (org.apache.mina.transport.socket.SocketSessionConfig) acceptor.getSessionConfig();
+                socketConfig.setKeepAlive(true);
+                socketConfig.setTcpNoDelay(true);
+            }
             
             // 绑定端口并启动
             acceptor.bind(new InetSocketAddress(bindAddress, port));

@@ -437,4 +437,29 @@ public class DataSyncService {
             return TimeUtils.formatTimestamp(lastSyncTime); 
         }
     }
+
+    // ========== 数据同步接口 ==========
+
+    /**
+     * 更新数据到缓存和数据库
+     * 
+     * @param table 表名
+     * @param id 数据ID
+     * @param data 数据内容
+     */
+    public void updateData(String table, String id, String data) {
+        String key = table + ":" + id;
+        updateCache(key, data, 3600, true); // 1小时过期，同步到数据库
+    }
+
+    /**
+     * 删除数据从缓存和数据库
+     * 
+     * @param table 表名
+     * @param id 数据ID
+     */
+    public void deleteData(String table, String id) {
+        String key = table + ":" + id;
+        deleteFromCache(key, true); // 同步到数据库
+    }
 }

@@ -22,6 +22,7 @@ public class Room {
 
     // 房间基本信息
     private final String roomId;
+    private String gameId;
     private String ownerId;
     private final RoomConfig config;
     private RoomStatus status;
@@ -74,6 +75,9 @@ public class Room {
         this.lastActiveTime = createTime;
         this.gameStartTime = 0;
         this.gameEndTime = 0;
+        
+        // 生成游戏ID
+        this.gameId = generateGameId();
         
         this.players = ConcurrentHashMap.newKeySet();
         this.playerInfos = new ConcurrentHashMap<>();
@@ -595,5 +599,30 @@ public class Room {
             return String.format("PlayerRoomInfo{playerId='%s', joinTime=%d, sessionDuration=%d}", 
                                playerId, joinTime, getSessionDuration());
         }
+    }
+
+    /**
+     * 生成游戏ID
+     */
+    private String generateGameId() {
+        return "GAME_" + roomId + "_" + System.currentTimeMillis();
+    }
+
+    /**
+     * 获取游戏ID
+     * 
+     * @return 游戏ID
+     */
+    public String getGameId() {
+        return gameId;
+    }
+
+    /**
+     * 设置游戏ID
+     * 
+     * @param gameId 游戏ID
+     */
+    public void setGameId(String gameId) {
+        this.gameId = gameId;
     }
 }

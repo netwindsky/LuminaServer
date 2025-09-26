@@ -499,6 +499,18 @@ public class Player {
         this.lastActiveTime = LocalDateTime.now();
     }
 
+    /**
+     * 更新玩家状态
+     * 
+     * @param newStatus 新状态
+     */
+    public void updateStatus(PlayerStatus newStatus) {
+        if (newStatus != null && newStatus != this.status) {
+            this.status = newStatus;
+            updateActiveTime();
+        }
+    }
+
     // ========== 经验和等级管理 ==========
 
     /**

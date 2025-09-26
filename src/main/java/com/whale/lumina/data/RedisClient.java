@@ -13,15 +13,17 @@ import redis.clients.jedis.exceptions.JedisException;
 
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
+import java.time.Duration;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 /**
  * Redis客户端封装类
- * 
+ *
  * 提供Redis操作的统一接口，包括连接池管理、异常处理和性能监控
- * 
+ *
  * @author Lumina Team
  */
 @Component
@@ -68,7 +70,7 @@ public class RedisClient {
             config.setMaxTotal(maxTotal);
             config.setMaxIdle(maxIdle);
             config.setMinIdle(minIdle);
-            config.setMaxWaitMillis(maxWait);
+            config.setMaxWait(Duration.ofMillis(maxWait));
             config.setTestOnBorrow(true);
             config.setTestOnReturn(true);
             config.setTestWhileIdle(true);
@@ -103,7 +105,7 @@ public class RedisClient {
 
     /**
      * 执行Redis操作
-     * 
+     *
      * @param operation Redis操作
      * @param <T> 返回类型
      * @return 操作结果
@@ -131,6 +133,13 @@ public class RedisClient {
      */
     public void setex(String key, int seconds, String value) {
         execute(jedis -> jedis.setex(key, seconds, value));
+    }
+
+    /**
+     * 设置键值对（带过期时间）
+     */
+    public void setWithExpire(String key, String value, int expireSeconds) {
+        execute(jedis -> jedis.setex(key, expireSeconds, value));
     }
 
     /**
@@ -166,6 +175,13 @@ public class RedisClient {
      */
     public Long ttl(String key) {
         return execute(jedis -> jedis.ttl(key));
+    }
+
+    /**
+     * 查找匹配的键
+     */
+    public Set<String> keys(String pattern) {
+        return execute(jedis -> jedis.keys(pattern));
     }
 
     // ========== 哈希操作 ==========
@@ -256,6 +272,13 @@ public class RedisClient {
         return execute(jedis -> jedis.lrange(key, start, stop));
     }
 
+    /**
+     * 修剪列表
+     */
+    public String ltrim(String key, long start, long stop) {
+        return execute(jedis -> jedis.ltrim(key, start, stop));
+    }
+
     // ========== 集合操作 ==========
 
     /**
@@ -293,6 +316,13 @@ public class RedisClient {
         return execute(jedis -> jedis.scard(key));
     }
 
+    /**
+     * 获取集合交集
+     */
+    public Set<String> sinter(String... keys) {
+        return execute(jedis -> jedis.sinter(keys));
+    }
+
     // ========== 有序集合操作 ==========
 
     /**
@@ -328,6 +358,13 @@ public class RedisClient {
      */
     public Double zscore(String key, String member) {
         return execute(jedis -> jedis.zscore(key, member));
+    }
+
+    /**
+     * 按分数降序获取有序集合范围内的成员
+     */
+    public Set<String> zrevrange(String key, long start, long stop) {
+        return execute(jedis -> jedis.zrevrange(key, start, stop));
     }
 
     // ========== 发布订阅 ==========

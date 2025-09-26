@@ -13,7 +13,7 @@ import org.springframework.stereotype.Component;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.PriorityQueue;
+import java.util.PriorityQueue;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.stream.Collectors;
 
@@ -284,6 +284,17 @@ public class MatchQueue {
     public int getQueueSize(String gameMode, MatchType matchType) {
         String queueKey = getQueueKey(gameMode, matchType);
         return getQueueSize(queueKey);
+    }
+
+    /**
+     * 获取所有队列的总大小
+     * 
+     * @return 所有队列的总大小
+     */
+    public int getQueueSize() {
+        return queueCache.values().stream()
+                .mapToInt(Queue::size)
+                .sum();
     }
 
     /**

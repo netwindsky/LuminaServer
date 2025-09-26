@@ -537,21 +537,22 @@ public class HealthEndpoint {
      * 检查信令处理器组件
      */
     private ComponentHealthStatus checkSignalingHandlerComponent() {
-        ComponentHealthStatus status = new ComponentHealthStatus();
-        status.setComponentName("signaling_handler");
-        status.setTimestamp(LocalDateTime.now());
-        
         try {
-            // TODO: 实现信令处理器健康检查
-            status.setStatus(HealthStatus.Status.UP);
-            status.setMessage("信令处理器正常");
+            int activeConnections = signalingHandler.getActiveConnections();
+            int activeSessions = signalingHandler.getActiveSessionCount();
             
+            Map<String, Object> details = new HashMap<>();
+            details.put("activeConnections", activeConnections);
+            details.put("activeSessions", activeSessions);
+            details.put("totalMessages", signalingHandler.getTotalSignalingMessages());
+            
+            return new ComponentHealthStatus("SignalingHandler", HealthStatus.UP, details);
         } catch (Exception e) {
-            status.setStatus(HealthStatus.Status.DOWN);
-            status.setMessage("信令处理器异常: " + e.getMessage());
+            logger.error("检查信令处理器组件健康状态失败", e);
+            Map<String, Object> details = new HashMap<>();
+            details.put("error", e.getMessage());
+            return new ComponentHealthStatus("SignalingHandler", HealthStatus.DOWN, details);
         }
-        
-        return status;
     }
 
     /**
@@ -830,6 +831,13 @@ public class HealthEndpoint {
 
         public ComponentHealthStatus() {
             this.details = new HashMap<>();
+        }
+
+        public ComponentHealthStatus(String componentName, HealthStatus.Status status, Map<String, Object> details) {
+            this.componentName = componentName;
+            this.setStatus(status);
+            this.details = details != null ? details : new HashMap<>();
+            this.setTimestamp(LocalDateTime.now());
         }
 
         // Getters and Setters

@@ -38,6 +38,12 @@ public class RoomConfig {
     private int inactiveTimeLimit; // 不活跃时间限制（秒）
     private boolean pauseOnPlayerLeave; // 玩家离开时是否暂停
 
+    // 新增字段
+    private boolean ranked; // 是否排位赛
+    private boolean tournament; // 是否锦标赛
+    private String mapName; // 地图名称
+    private Integer gameTime; // 游戏时间（分钟）
+
     // 扩展配置
     private final Map<String, Object> customSettings;
 
@@ -526,6 +532,39 @@ public class RoomConfig {
 
     public void setPauseOnPlayerLeave(boolean pauseOnPlayerLeave) {
         this.pauseOnPlayerLeave = pauseOnPlayerLeave;
+    }
+
+    // 新增方法
+    public boolean isRanked() {
+        return ranked;
+    }
+
+    public void setRanked(boolean ranked) {
+        this.ranked = ranked;
+    }
+
+    public boolean isTournament() {
+        return tournament;
+    }
+
+    public void setTournament(boolean tournament) {
+        this.tournament = tournament;
+    }
+
+    public String getMapName() {
+        return mapName;
+    }
+
+    public void setMapName(String mapName) {
+        this.mapName = mapName;
+    }
+
+    public Integer getGameTime() {
+        return gameTime;
+    }
+
+    public void setGameTime(Integer gameTime) {
+        this.gameTime = gameTime;
     }
 
     // ========== Object方法重写 ==========

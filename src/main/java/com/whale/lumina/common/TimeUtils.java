@@ -99,6 +99,44 @@ public final class TimeUtils {
     }
 
     /**
+     * 格式化持续时间为可读字符串
+     * 
+     * @param durationMillis 持续时间（毫秒）
+     * @return 格式化后的持续时间字符串
+     */
+    public static String formatDuration(long durationMillis) {
+        if (durationMillis < 0) {
+            return "0ms";
+        }
+        
+        long days = durationMillis / DAY_MILLIS;
+        long hours = (durationMillis % DAY_MILLIS) / HOUR_MILLIS;
+        long minutes = (durationMillis % HOUR_MILLIS) / MINUTE_MILLIS;
+        long seconds = (durationMillis % MINUTE_MILLIS) / SECOND_MILLIS;
+        long millis = durationMillis % SECOND_MILLIS;
+        
+        StringBuilder sb = new StringBuilder();
+        
+        if (days > 0) {
+            sb.append(days).append("d ");
+        }
+        if (hours > 0) {
+            sb.append(hours).append("h ");
+        }
+        if (minutes > 0) {
+            sb.append(minutes).append("m ");
+        }
+        if (seconds > 0) {
+            sb.append(seconds).append("s ");
+        }
+        if (millis > 0 || sb.length() == 0) {
+            sb.append(millis).append("ms");
+        }
+        
+        return sb.toString().trim();
+    }
+
+    /**
      * 计算两个时间戳之间的延迟（毫秒）
      * 
      * @param startTime 开始时间戳
@@ -254,6 +292,8 @@ public final class TimeUtils {
     public static class PerformanceTimer {
         private long startTime;
         private long endTime;
+        private long totalTime;
+        private int count;
 
         public PerformanceTimer() {
             reset();
@@ -271,6 +311,8 @@ public final class TimeUtils {
          */
         public void stop() {
             endTime = currentNanoTime();
+            totalTime += (endTime - startTime);
+            count++;
         }
 
         /**
@@ -279,6 +321,8 @@ public final class TimeUtils {
         public void reset() {
             startTime = 0;
             endTime = 0;
+            totalTime = 0;
+            count = 0;
         }
 
         /**
@@ -306,6 +350,27 @@ public final class TimeUtils {
          */
         public long getElapsedMicros() {
             return nanosToMicros(getElapsedNanos());
+        }
+
+        /**
+         * 获取平均时间（毫秒）
+         * 
+         * @return 平均时间（毫秒）
+         */
+        public double getAverageTime() {
+            if (count == 0) {
+                return 0.0;
+            }
+            return nanosToMillis(totalTime) / (double) count;
+        }
+
+        /**
+         * 获取总计时次数
+         * 
+         * @return 计时次数
+         */
+        public int getCount() {
+            return count;
         }
     }
 
