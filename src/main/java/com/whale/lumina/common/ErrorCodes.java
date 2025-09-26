@@ -344,3 +344,7 @@ public final class ErrorCodes {
         throw new UnsupportedOperationException("Utility class cannot be instantiated");
     }
 }
+
+    // 信令相关错误
+    public static final int INVALID_PARAMETER = 4001;
+    public static final int INTERNAL_ERROR = 4002;

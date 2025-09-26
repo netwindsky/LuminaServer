@@ -340,10 +340,24 @@ public class RedisClient {
     }
 
     /**
-     * 获取有序集合范围内的成员
+     * 将Set<String>转换为List<String>
      */
-    public Set<String> zrange(String key, long start, long stop) {
-        return execute(jedis -> jedis.zrange(key, start, stop));
+    private List<String> setToList(Set<String> set) {
+        return new ArrayList<>(set);
+    }
+
+    /**
+     * 获取有序集合范围内的成员（返回List）
+     */
+    public List<String> zrangeAsList(String key, long start, long stop) {
+        return setToList(zrange(key, start, stop));
+    }
+
+    /**
+     * 按分数降序获取有序集合范围内的成员（返回List）
+     */
+    public List<String> zrevrangeAsList(String key, long start, long stop) {
+        return setToList(zrevrange(key, start, stop));
     }
 
     /**

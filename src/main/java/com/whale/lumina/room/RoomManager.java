@@ -652,6 +652,24 @@ public class RoomManager {
         );
     }
 
+    /**
+     * 获取当前活跃房间数量
+     * @return 活跃房间数量
+     */
+    public int getActiveRoomCount() {
+        return (int) rooms.values().stream()
+                .filter(room -> room.getStatus() == Room.RoomStatus.PLAYING)
+                .count();
+    }
+
+    /**
+     * 获取总房间数量（包括所有状态的房间）
+     * @return 总房间数量
+     */
+    public int getTotalRoomCount() {
+        return rooms.size();
+    }
+
     // ========== 事件类定义 ==========
 
     public interface RoomEvent {

@@ -1,490 +1,383 @@
 package com.whale.lumina.signaling;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.annotation.JsonProperty;
-
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import java.time.LocalDateTime;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 /**
- * 信令会话实体类
- * 
- * 表示一个WebRTC信令会话，包含会话的基本信息、参与者、状态等
- * 
+ * 信令会话类
+ *
+ * 代表一个WebRTC信令会话，管理参与者、消息和会话状态
+ *
  * @author Lumina Team
  */
-@JsonIgnoreProperties(ignoreUnknown = true)
 public class SignalingSession {
-
-    @JsonProperty("sessionId")
-    private String sessionId;
-
-    @JsonProperty("roomId")
-    private String roomId;
-
-    @JsonProperty("creatorId")
-    private String creatorId;
-
-    @JsonProperty("participants")
-    private Set<String> participants;
-
-    @JsonProperty("status")
-    private SessionStatus status;
-
-    @JsonProperty("sessionType")
-    private SessionType sessionType;
-
-    @JsonProperty("createdTime")
-    private LocalDateTime createdTime;
-
-    @JsonProperty("lastActiveTime")
-    private LocalDateTime lastActiveTime;
-
-    @JsonProperty("endTime")
-    private LocalDateTime endTime;
-
-    @JsonProperty("maxParticipants")
-    private int maxParticipants;
-
-    @JsonProperty("metadata")
-    private Map<String, Object> metadata;
-
-    @JsonProperty("participantStates")
-    private Map<String, ParticipantState> participantStates;
 
     /**
      * 会话状态枚举
      */
     public enum SessionStatus {
-        CREATED,        // 已创建
-        ACTIVE,         // 活跃中
-        PAUSED,         // 暂停
-        ENDED,          // 已结束
-        ERROR           // 错误状态
+        PENDING,    // 等待中
+        ACTIVE,     // 活跃中
+        PAUSED,     // 已暂停
+        ENDED,      // 已结束
+        CLOSED,     // 已关闭
+        CONNECTING  // 连接中
     }
 
     /**
      * 会话类型枚举
      */
     public enum SessionType {
-        PEER_TO_PEER,   // 点对点
-        MULTI_PARTY,    // 多方通话
-        BROADCAST,      // 广播
-        CONFERENCE      // 会议
+        PEER_TO_PEER,       // 点对点
+        MESH,               // 网状
+        SFU,                // 选择性转发单元
+        MCU                 // 多点控制单元
     }
 
-    /**
-     * 参与者状态
-     */
-    public static class ParticipantState {
-        @JsonProperty("userId")
-        private String userId;
+    // 会话基本信息
+    private String sessionId;           // 会话ID
+    private String roomId;              // 房间ID
+    private String creatorId;           // 创建者ID
+    private Set<String> participants;   // 参与者ID集合
+    private SessionStatus status;       // 会话状态
+    private SessionType sessionType;    // 会话类型
+    private long createdTime;           // 创建时间戳
+    private long activeTime;            // 最后活跃时间戳
 
-        @JsonProperty("joinTime")
-        private LocalDateTime joinTime;
+    // 信令消息队列
+    private Queue<SignalingMessage> messages;
+    private static final int MAX_MESSAGES = 1000; // 最大消息数量限制
 
-        @JsonProperty("lastActiveTime")
-        private LocalDateTime lastActiveTime;
+    // 会话配置
+    private Map<String, Object> config; // 会话配置参数
 
-        @JsonProperty("connectionState")
-        private ConnectionState connectionState;
-
-        @JsonProperty("mediaState")
-        private MediaState mediaState;
-
-        @JsonProperty("metadata")
-        private Map<String, Object> metadata;
-
-        /**
-         * 连接状态
-         */
-        public enum ConnectionState {
-            CONNECTING,     // 连接中
-            CONNECTED,      // 已连接
-            DISCONNECTED,   // 已断开
-            FAILED,         // 连接失败
-            CLOSED          // 已关闭
-        }
-
-        /**
-         * 媒体状态
-         */
-        public static class MediaState {
-            @JsonProperty("audioEnabled")
-            private boolean audioEnabled;
-
-            @JsonProperty("videoEnabled")
-            private boolean videoEnabled;
-
-            @JsonProperty("screenShareEnabled")
-            private boolean screenShareEnabled;
-
-            public MediaState() {
-                this.audioEnabled = true;
-                this.videoEnabled = true;
-                this.screenShareEnabled = false;
-            }
-
-            // Getters and Setters
-            public boolean isAudioEnabled() { return audioEnabled; }
-            public void setAudioEnabled(boolean audioEnabled) { this.audioEnabled = audioEnabled; }
-
-            public boolean isVideoEnabled() { return videoEnabled; }
-            public void setVideoEnabled(boolean videoEnabled) { this.videoEnabled = videoEnabled; }
-
-            public boolean isScreenShareEnabled() { return screenShareEnabled; }
-            public void setScreenShareEnabled(boolean screenShareEnabled) { this.screenShareEnabled = screenShareEnabled; }
-        }
-
-        /**
-         * 默认构造函数
-         */
-        public ParticipantState() {
-            this.joinTime = LocalDateTime.now();
-            this.lastActiveTime = LocalDateTime.now();
-            this.connectionState = ConnectionState.CONNECTING;
-            this.mediaState = new MediaState();
-            this.metadata = new HashMap<>();
-        }
-
-        /**
-         * 构造函数
-         */
-        public ParticipantState(String userId) {
-            this();
-            this.userId = userId;
-        }
-
-        /**
-         * 更新活跃时间
-         */
-        public void updateActiveTime() {
-            this.lastActiveTime = LocalDateTime.now();
-        }
-
-        // Getters and Setters
-        public String getUserId() { return userId; }
-        public void setUserId(String userId) { this.userId = userId; }
-
-        public LocalDateTime getJoinTime() { return joinTime; }
-        public void setJoinTime(LocalDateTime joinTime) { this.joinTime = joinTime; }
-
-        public LocalDateTime getLastActiveTime() { return lastActiveTime; }
-        public void setLastActiveTime(LocalDateTime lastActiveTime) { this.lastActiveTime = lastActiveTime; }
-
-        public ConnectionState getConnectionState() { return connectionState; }
-        public void setConnectionState(ConnectionState connectionState) { this.connectionState = connectionState; }
-
-        public MediaState getMediaState() { return mediaState; }
-        public void setMediaState(MediaState mediaState) { this.mediaState = mediaState; }
-
-        public Map<String, Object> getMetadata() { return metadata; }
-        public void setMetadata(Map<String, Object> metadata) { this.metadata = metadata; }
-    }
+    // 统计信息
+    private long messageCount;          // 消息总数
+    private long dataTransferBytes;     // 数据传输字节数
 
     /**
-     * 默认构造函数
+     * 构造函数
      */
     public SignalingSession() {
         this.participants = new HashSet<>();
-        this.status = SessionStatus.CREATED;
-        this.sessionType = SessionType.MULTI_PARTY;
-        this.createdTime = LocalDateTime.now();
-        this.lastActiveTime = LocalDateTime.now();
-        this.maxParticipants = 10;
-        this.metadata = new HashMap<>();
-        this.participantStates = new ConcurrentHashMap<>();
+        this.messages = new ConcurrentLinkedQueue<>();
+        this.config = new HashMap<>();
+        this.createdTime = System.currentTimeMillis();
+        this.activeTime = this.createdTime;
+        this.status = SessionStatus.PENDING;
+        this.sessionType = SessionType.PEER_TO_PEER;
     }
 
     /**
      * 构造函数
+     *
+     * @param sessionId 会话ID
+     * @param roomId 房间ID
+     * @param creatorId 创建者ID
      */
     public SignalingSession(String sessionId, String roomId, String creatorId) {
         this();
         this.sessionId = sessionId;
         this.roomId = roomId;
         this.creatorId = creatorId;
-        
-        // 创建者自动加入会话
-        addParticipant(creatorId);
+        if (creatorId != null) {
+            this.participants.add(creatorId);
+        }
     }
+
+    // ========== Getters and Setters ==========
+
+    public String getSessionId() {
+        return sessionId;
+    }
+
+    public void setSessionId(String sessionId) {
+        this.sessionId = sessionId;
+    }
+
+    public String getRoomId() {
+        return roomId;
+    }
+
+    public void setRoomId(String roomId) {
+        this.roomId = roomId;
+    }
+
+    public String getCreatorId() {
+        return creatorId;
+    }
+
+    public void setCreatorId(String creatorId) {
+        this.creatorId = creatorId;
+    }
+
+    public Set<String> getParticipants() {
+        return participants;
+    }
+
+    public void setParticipants(Set<String> participants) {
+        this.participants = participants != null ? participants : new HashSet<>();
+    }
+
+    public SessionStatus getStatus() {
+        return status;
+    }
+
+    public void setStatus(SessionStatus status) {
+        this.status = status;
+    }
+
+    public SessionType getSessionType() {
+        return sessionType;
+    }
+
+    public void setSessionType(SessionType sessionType) {
+        this.sessionType = sessionType;
+    }
+
+    public long getCreatedTime() {
+        return createdTime;
+    }
+
+    public void setCreatedTime(long createdTime) {
+        this.createdTime = createdTime;
+    }
+
+    public long getActiveTime() {
+        return activeTime;
+    }
+
+    public void setActiveTime(long activeTime) {
+        this.activeTime = activeTime;
+    }
+
+    public Map<String, Object> getConfig() {
+        return config;
+    }
+
+    public void setConfig(Map<String, Object> config) {
+        this.config = config != null ? config : new HashMap<>();
+    }
+
+    public long getMessageCount() {
+        return messageCount;
+    }
+
+    public void setMessageCount(long messageCount) {
+        this.messageCount = messageCount;
+    }
+
+    public long getDataTransferBytes() {
+        return dataTransferBytes;
+    }
+
+    public void setDataTransferBytes(long dataTransferBytes) {
+        this.dataTransferBytes = dataTransferBytes;
+    }
+
+    // ========== 业务方法 ==========
 
     /**
      * 添加参与者
+     *
+     * @param userId 用户ID
+     * @return 是否添加成功
      */
     public boolean addParticipant(String userId) {
         if (userId == null || userId.isEmpty()) {
             return false;
         }
 
-        if (participants.size() >= maxParticipants) {
-            return false;
-        }
-
-        if (participants.add(userId)) {
-            participantStates.put(userId, new ParticipantState(userId));
+        boolean added = participants.add(userId);
+        if (added) {
             updateActiveTime();
-            return true;
         }
-
-        return false;
+        return added;
     }
 
     /**
      * 移除参与者
+     *
+     * @param userId 用户ID
+     * @return 是否移除成功
      */
     public boolean removeParticipant(String userId) {
         if (userId == null || userId.isEmpty()) {
             return false;
         }
 
-        if (participants.remove(userId)) {
-            participantStates.remove(userId);
+        boolean removed = participants.remove(userId);
+        if (removed) {
             updateActiveTime();
-            
-            // 如果没有参与者了，结束会话
-            if (participants.isEmpty()) {
-                endSession();
-            }
-            
-            return true;
         }
-
-        return false;
+        return removed;
     }
 
     /**
-     * 检查用户是否是参与者
+     * 检查是否为参与者
+     *
+     * @param userId 用户ID
+     * @return 是否为参与者
      */
     public boolean isParticipant(String userId) {
+        if (userId == null || userId.isEmpty()) {
+            return false;
+        }
         return participants.contains(userId);
     }
 
     /**
      * 获取参与者数量
+     *
+     * @return 参与者数量
      */
+    @JsonIgnore
     public int getParticipantCount() {
         return participants.size();
-    }
-
-    /**
-     * 检查是否可以添加更多参与者
-     */
-    public boolean canAddParticipant() {
-        return participants.size() < maxParticipants;
     }
 
     /**
      * 更新活跃时间
      */
     public void updateActiveTime() {
-        this.lastActiveTime = LocalDateTime.now();
+        this.activeTime = System.currentTimeMillis();
     }
 
     /**
-     * 更新参与者活跃时间
+     * 获取会话持续时间（分钟）
+     *
+     * @return 持续时间（分钟）
      */
-    public void updateParticipantActiveTime(String userId) {
-        ParticipantState state = participantStates.get(userId);
-        if (state != null) {
-            state.updateActiveTime();
-        }
-        updateActiveTime();
+    @JsonIgnore
+    public long getDurationMinutes() {
+        return (System.currentTimeMillis() - createdTime) / 60000;
     }
 
     /**
-     * 获取参与者状态
+     * 检查是否超时
+     *
+     * @param timeoutMinutes 超时时间（分钟）
+     * @return 是否超时
      */
-    public ParticipantState getParticipantState(String userId) {
-        return participantStates.get(userId);
-    }
-
-    /**
-     * 更新参与者连接状态
-     */
-    public void updateParticipantConnectionState(String userId, ParticipantState.ConnectionState connectionState) {
-        ParticipantState state = participantStates.get(userId);
-        if (state != null) {
-            state.setConnectionState(connectionState);
-            state.updateActiveTime();
-            updateActiveTime();
-        }
-    }
-
-    /**
-     * 更新参与者媒体状态
-     */
-    public void updateParticipantMediaState(String userId, ParticipantState.MediaState mediaState) {
-        ParticipantState state = participantStates.get(userId);
-        if (state != null) {
-            state.setMediaState(mediaState);
-            state.updateActiveTime();
-            updateActiveTime();
-        }
+    public boolean isIdleTimeout(long timeoutMinutes) {
+        return getDurationMinutes() > timeoutMinutes;
     }
 
     /**
      * 检查会话是否活跃
+     *
+     * @return 是否活跃
      */
+    @JsonIgnore
     public boolean isActive() {
-        return status == SessionStatus.ACTIVE && !participants.isEmpty();
+        return status == SessionStatus.ACTIVE || status == SessionStatus.CONNECTING;
     }
 
     /**
-     * 检查会话是否已结束
+     * 开始会话
      */
-    public boolean isEnded() {
-        return status == SessionStatus.ENDED || endTime != null;
-    }
-
-    /**
-     * 激活会话
-     */
-    public void activateSession() {
-        if (status == SessionStatus.CREATED || status == SessionStatus.PAUSED) {
-            this.status = SessionStatus.ACTIVE;
-            updateActiveTime();
-        }
-    }
-
-    /**
-     * 暂停会话
-     */
-    public void pauseSession() {
-        if (status == SessionStatus.ACTIVE) {
-            this.status = SessionStatus.PAUSED;
-            updateActiveTime();
-        }
+    public void startSession() {
+        this.status = SessionStatus.ACTIVE;
+        updateActiveTime();
     }
 
     /**
      * 结束会话
      */
     public void endSession() {
-        this.status = SessionStatus.ENDED;
-        this.endTime = LocalDateTime.now();
+        this.status = SessionStatus.CLOSED;
+        clearMessages();
         updateActiveTime();
     }
 
     /**
-     * 设置错误状态
+     * 添加消息到会话
      */
-    public void setErrorStatus() {
-        this.status = SessionStatus.ERROR;
+    public void addMessage(SignalingMessage message) {
+        if (message == null) {
+            return;
+        }
+
+        messages.offer(message);
+
+        // 保持消息数量在限制内
+        while (messages.size() > MAX_MESSAGES) {
+            messages.poll();
+        }
+
         updateActiveTime();
     }
 
     /**
-     * 获取会话持续时间（分钟）
+     * 获取最近的消息
      */
-    public long getDurationMinutes() {
-        LocalDateTime endTimeToUse = endTime != null ? endTime : LocalDateTime.now();
-        return java.time.Duration.between(createdTime, endTimeToUse).toMinutes();
-    }
-
-    /**
-     * 获取会话空闲时间（分钟）
-     */
-    public long getIdleMinutes() {
-        return java.time.Duration.between(lastActiveTime, LocalDateTime.now()).toMinutes();
-    }
-
-    /**
-     * 检查会话是否空闲超时
-     */
-    public boolean isIdleTimeout(long timeoutMinutes) {
-        return getIdleMinutes() > timeoutMinutes;
-    }
-
-    /**
-     * 添加元数据
-     */
-    public void addMetadata(String key, Object value) {
-        metadata.put(key, value);
-    }
-
-    /**
-     * 获取元数据
-     */
-    public Object getMetadata(String key) {
-        return metadata.get(key);
-    }
-
-    /**
-     * 移除元数据
-     */
-    public void removeMetadata(String key) {
-        metadata.remove(key);
-    }
-
-    /**
-     * 获取连接状态统计
-     */
-    public Map<ParticipantState.ConnectionState, Integer> getConnectionStateStats() {
-        Map<ParticipantState.ConnectionState, Integer> stats = new HashMap<>();
-        
-        for (ParticipantState state : participantStates.values()) {
-            ParticipantState.ConnectionState connectionState = state.getConnectionState();
-            stats.put(connectionState, stats.getOrDefault(connectionState, 0) + 1);
+    public List<SignalingMessage> getRecentMessages(int count) {
+        if (count <= 0) {
+            return new ArrayList<>();
         }
-        
-        return stats;
+
+        List<SignalingMessage> messageList = new ArrayList<>(messages);
+        int size = messageList.size();
+
+        if (size <= count) {
+            return messageList;
+        }
+
+        return messageList.subList(size - count, size);
     }
 
     /**
-     * 获取活跃参与者列表
+     * 获取所有消息
      */
-    public List<String> getActiveParticipants() {
-        List<String> activeParticipants = new ArrayList<>();
-        
-        for (Map.Entry<String, ParticipantState> entry : participantStates.entrySet()) {
-            ParticipantState.ConnectionState state = entry.getValue().getConnectionState();
-            if (state == ParticipantState.ConnectionState.CONNECTED || 
-                state == ParticipantState.ConnectionState.CONNECTING) {
-                activeParticipants.add(entry.getKey());
-            }
-        }
-        
-        return activeParticipants;
+    public List<SignalingMessage> getAllMessages() {
+        return new ArrayList<>(messages);
     }
 
-    // Getters and Setters
-    public String getSessionId() { return sessionId; }
-    public void setSessionId(String sessionId) { this.sessionId = sessionId; }
+    /**
+     * 清空消息
+     */
+    public void clearMessages() {
+        messages.clear();
+    }
 
-    public String getRoomId() { return roomId; }
-    public void setRoomId(String roomId) { this.roomId = roomId; }
+    /**
+     * 获取消息数量
+     */
+    public int getMessageCountInternal() {
+        return messages.size();
+    }
 
-    public String getCreatorId() { return creatorId; }
-    public void setCreatorId(String creatorId) { this.creatorId = creatorId; }
+    // 方法别名，用于兼容SignalingHandler中的调用
 
-    public Set<String> getParticipants() { return new HashSet<>(participants); }
-    public void setParticipants(Set<String> participants) { this.participants = participants; }
+    /**
+     * 结束会话 - endSession的别名
+     */
+    public void end() {
+        endSession();
+    }
 
-    public SessionStatus getStatus() { return status; }
-    public void setStatus(SessionStatus status) { this.status = status; }
+    /**
+     * 获取持续时间 - getDurationMinutes的别名
+     */
+    public long getDuration() {
+        return getDurationMinutes();
+    }
 
-    public SessionType getSessionType() { return sessionType; }
-    public void setSessionType(SessionType sessionType) { this.sessionType = sessionType; }
+    /**
+     * 检查是否有参与者 - isParticipant的别名
+     */
+    public boolean hasParticipant(String userId) {
+        return isParticipant(userId);
+    }
 
-    public LocalDateTime getCreatedTime() { return createdTime; }
-    public void setCreatedTime(LocalDateTime createdTime) { this.createdTime = createdTime; }
-
-    public LocalDateTime getLastActiveTime() { return lastActiveTime; }
-    public void setLastActiveTime(LocalDateTime lastActiveTime) { this.lastActiveTime = lastActiveTime; }
-
-    public LocalDateTime getEndTime() { return endTime; }
-    public void setEndTime(LocalDateTime endTime) { this.endTime = endTime; }
-
-    public int getMaxParticipants() { return maxParticipants; }
-    public void setMaxParticipants(int maxParticipants) { this.maxParticipants = maxParticipants; }
-
-    public Map<String, Object> getMetadata() { return metadata; }
-    public void setMetadata(Map<String, Object> metadata) { this.metadata = metadata; }
-
-    public Map<String, ParticipantState> getParticipantStates() { return participantStates; }
-    public void setParticipantStates(Map<String, ParticipantState> participantStates) { this.participantStates = participantStates; }
+    /**
+     * 检查是否过期 - isIdleTimeout的别名
+     */
+    public boolean isExpired(long timeoutMinutes) {
+        return isIdleTimeout(timeoutMinutes);
+    }
 
     @Override
     public boolean equals(Object o) {

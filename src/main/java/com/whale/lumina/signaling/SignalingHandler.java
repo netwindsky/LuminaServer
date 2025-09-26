@@ -61,17 +61,21 @@ public class SignalingHandler {
      */
     public String createSignalingSession(String roomId, List<String> participants) throws GameException {
         if (roomId == null || roomId.isEmpty()) {
-            throw new GameException(ErrorCodes.ROOM_NOT_FOUND, "房间ID不能为空");
+            throw new GameException(ErrorCodes.INVALID_PARAMETER, "房间ID不能为空");
         }
         
         if (participants == null || participants.isEmpty()) {
-            throw new GameException(ErrorCodes.PLAYER_NOT_FOUND, "参与者列表不能为空");
+            throw new GameException(ErrorCodes.INVALID_PARAMETER, "参与者列表不能为空");
         }
 
         String sessionId = "signaling_" + nextSessionId.getAndIncrement();
         
         try {
-            SignalingSession session = new SignalingSession(sessionId, roomId, participants);
+            SignalingSession session = new SignalingSession(sessionId, roomId, participants.get(0));
+            // 添加所有参与者
+            for (String participant : participants) {
+                session.addParticipant(participant);
+            }
             activeSessions.put(sessionId, session);
             
             // 保存到存储
@@ -83,8 +87,8 @@ public class SignalingHandler {
             return sessionId;
             
         } catch (Exception e) {
-            logger.error("创建信令会话失败: roomId={}", roomId, e);
-            throw new GameException(ErrorCodes.SYSTEM_ERROR, "创建信令会话失败: " + e.getMessage());
+            logger.error("创建信令会话失败: roomId={}, participants={}", roomId, participants, e);
+            throw new GameException(ErrorCodes.INTERNAL_ERROR, "创建信令会话失败: " + e.getMessage());
         }
     }
 
@@ -178,6 +182,7 @@ public class SignalingHandler {
             // 创建信令消息
             SignalingMessage message = new SignalingMessage(
                 SignalingMessage.Type.OFFER, fromUserId, toUserId, offer);
+            message.setType(getMessageTypeString(SignalingMessage.Type.OFFER));
             
             // 处理消息
             session.addMessage(message);
@@ -223,6 +228,7 @@ public class SignalingHandler {
             // 创建信令消息
             SignalingMessage message = new SignalingMessage(
                 SignalingMessage.Type.ANSWER, fromUserId, toUserId, answer);
+            message.setType(getMessageTypeString(SignalingMessage.Type.ANSWER));
             
             // 处理消息
             session.addMessage(message);
@@ -268,6 +274,7 @@ public class SignalingHandler {
             // 创建信令消息
             SignalingMessage message = new SignalingMessage(
                 SignalingMessage.Type.CANDIDATE, fromUserId, toUserId, candidate);
+            message.setType(getMessageTypeString(SignalingMessage.Type.CANDIDATE));
             
             // 处理消息
             session.addMessage(message);
@@ -318,6 +325,7 @@ public class SignalingHandler {
             // 创建信令消息
             SignalingMessage message = new SignalingMessage(
                 SignalingMessage.Type.CUSTOM, fromUserId, toUserId, customData);
+            message.setType(getMessageTypeString(SignalingMessage.Type.CUSTOM));
             
             // 处理消息
             session.addMessage(message);
@@ -327,8 +335,14 @@ public class SignalingHandler {
                 // 单播
                 forwardMessage(sessionId, message);
             } else {
-                // 广播给其他所有参与者
-                broadcastMessage(sessionId, message);
+                // 广播给所有参与者
+                for (String participantId : session.getParticipants()) {
+                    if (!participantId.equals(message.getFromUserId())) {
+                        // 这里应该通过WebSocket或其他方式发送消息
+                        logger.debug("广播消息给参与者: sessionId={}, participantId={}, messageType={}", 
+                                   sessionId, participantId, message.getType().name());
+                    }
+                }
             }
             
             totalSignalingMessages.incrementAndGet();
@@ -409,7 +423,7 @@ public class SignalingHandler {
             throw new GameException(ErrorCodes.ROOM_NOT_FOUND, "信令会话不存在: " + sessionId);
         }
         
-        return session.getParticipants();
+        return new ArrayList<>(session.getParticipants());
     }
 
     /**
@@ -625,3 +639,12 @@ public class SignalingHandler {
         }
     }
 }
+
+    /**
+     * 获取消息类型的字符串表示
+     * @param type 消息类型
+     * @return 字符串表示
+     */
+    private String getMessageTypeString(SignalingMessage.Type type) {
+        return type.toString();
+    }
