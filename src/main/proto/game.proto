@@ -1,0 +1,289 @@
+syntax = "proto3";
+
+package game;
+
+option java_package = "com.whale.lumina.proto";
+option java_outer_classname = "GameProtos";
+option java_multiple_files = true;
+
+// ========== 基础消息结构 ==========
+
+// RPC请求消息
+message RpcRequest {
+  string request_id = 1;
+  string method = 2;
+  bytes payload = 3;
+  int64 timestamp = 4;
+}
+
+// RPC响应消息
+message RpcResponse {
+  string request_id = 1;
+  int32 code = 2;
+  string message = 3;
+  bytes payload = 4;
+  int64 timestamp = 5;
+}
+
+// ========== 登录相关 ==========
+
+// 登录请求
+message LoginRequest {
+  string username = 1;
+  string password = 2;
+  string device_id = 3;
+  string client_version = 4;
+}
+
+// 登录响应
+message LoginResponse {
+  string player_id = 1;
+  string session_token = 2;
+  PlayerInfo player_info = 3;
+}
+
+// 玩家信息
+message PlayerInfo {
+  string player_id = 1;
+  string username = 2;
+  int32 level = 3;
+  int32 experience = 4;
+  int32 coins = 5;
+  int64 last_login_time = 6;
+}
+
+// ========== 匹配系统 ==========
+
+// 匹配请求
+message MatchmakingRequest {
+  string game_mode = 1;
+  int32 skill_level = 2;
+  repeated string preferred_maps = 3;
+}
+
+// 匹配响应
+message MatchmakingResponse {
+  string queue_id = 1;
+  int32 estimated_wait_time = 2;
+  int32 players_in_queue = 3;
+}
+
+// 匹配结果
+message MatchmakingResult {
+  string room_id = 1;
+  repeated PlayerInfo players = 2;
+  string game_mode = 3;
+  string map_name = 4;
+  string server_address = 5;
+}
+
+// ========== 游戏输入 ==========
+
+// 玩家输入
+message PlayerInput {
+  string player_id = 1;
+  int64 timestamp = 2;
+  int32 sequence_number = 3;
+  InputType input_type = 4;
+  Vector3 position = 5;
+  Vector3 rotation = 6;
+  repeated int32 key_states = 7;
+  MouseInput mouse_input = 8;
+}
+
+enum InputType {
+  MOVEMENT = 0;
+  ACTION = 1;
+  SKILL = 2;
+  INTERACTION = 3;
+}
+
+// 鼠标输入
+message MouseInput {
+  float x = 1;
+  float y = 2;
+  bool left_button = 3;
+  bool right_button = 4;
+  float wheel_delta = 5;
+}
+
+// 3D向量
+message Vector3 {
+  float x = 1;
+  float y = 2;
+  float z = 3;
+}
+
+// ========== 游戏状态 ==========
+
+// 玩家状态
+message PlayerState {
+  string player_id = 1;
+  Vector3 position = 2;
+  Vector3 rotation = 3;
+  Vector3 velocity = 4;
+  int32 health = 5;
+  int32 mana = 6;
+  PlayerStatus status = 7;
+  repeated BuffEffect buffs = 8;
+}
+
+enum PlayerStatus {
+  IDLE = 0;
+  MOVING = 1;
+  ATTACKING = 2;
+  CASTING = 3;
+  DEAD = 4;
+}
+
+// Buff效果
+message BuffEffect {
+  string buff_id = 1;
+  int32 duration = 2;
+  int32 stack_count = 3;
+  map<string, float> properties = 4;
+}
+
+// 房间状态
+message RoomState {
+  string room_id = 1;
+  RoomStatus status = 2;
+  repeated PlayerState players = 3;
+  int64 game_time = 4;
+  int32 tick_number = 5;
+  map<string, string> game_data = 6;
+}
+
+enum RoomStatus {
+  WAITING = 0;
+  PLAYING = 1;
+  PAUSED = 2;
+  FINISHED = 3;
+}
+
+// ========== 服务器更新 ==========
+
+// 服务器更新消息
+message ServerUpdate {
+  int64 timestamp = 1;
+  int32 tick_number = 2;
+  UpdateType update_type = 3;
+  repeated PlayerState player_states = 4;
+  repeated GameEvent events = 5;
+  WorldState world_state = 6;
+}
+
+enum UpdateType {
+  FULL_STATE = 0;
+  DELTA_STATE = 1;
+  EVENT_ONLY = 2;
+}
+
+// 游戏事件
+message GameEvent {
+  string event_id = 1;
+  EventType event_type = 2;
+  string source_player = 3;
+  string target_player = 4;
+  Vector3 position = 5;
+  map<string, string> parameters = 6;
+  int64 timestamp = 7;
+}
+
+enum EventType {
+  PLAYER_SPAWN = 0;
+  PLAYER_DEATH = 1;
+  SKILL_CAST = 2;
+  ITEM_PICKUP = 3;
+  DAMAGE_DEALT = 4;
+  HEAL_RECEIVED = 5;
+}
+
+// 世界状态
+message WorldState {
+  repeated GameObject objects = 1;
+  WeatherInfo weather = 2;
+  TimeInfo time_info = 3;
+}
+
+// 游戏对象
+message GameObject {
+  string object_id = 1;
+  ObjectType object_type = 2;
+  Vector3 position = 3;
+  Vector3 rotation = 4;
+  Vector3 scale = 5;
+  map<string, string> properties = 6;
+}
+
+enum ObjectType {
+  STATIC_OBJECT = 0;
+  DYNAMIC_OBJECT = 1;
+  COLLECTIBLE = 2;
+  INTERACTIVE = 3;
+}
+
+// 天气信息
+message WeatherInfo {
+  WeatherType weather_type = 1;
+  float intensity = 2;
+  Vector3 wind_direction = 3;
+  float wind_speed = 4;
+}
+
+enum WeatherType {
+  CLEAR = 0;
+  RAIN = 1;
+  SNOW = 2;
+  FOG = 3;
+  STORM = 4;
+}
+
+// 时间信息
+message TimeInfo {
+  int32 day = 1;
+  int32 hour = 2;
+  int32 minute = 3;
+  float day_night_cycle = 4;
+}
+
+// ========== WebRTC信令 ==========
+
+// WebRTC信令消息
+message WebRTCSignaling {
+  string from_player = 1;
+  string to_player = 2;
+  SignalingType signaling_type = 3;
+  string sdp = 4;
+  IceCandidate ice_candidate = 5;
+}
+
+enum SignalingType {
+  OFFER = 0;
+  ANSWER = 1;
+  ICE_CANDIDATE = 2;
+  ICE_GATHERING_COMPLETE = 3;
+}
+
+// ICE候选
+message IceCandidate {
+  string candidate = 1;
+  string sdp_mid = 2;
+  int32 sdp_mline_index = 3;
+}
+
+// ========== 心跳消息 ==========
+
+// 心跳请求
+message HeartbeatRequest {
+  int64 client_timestamp = 1;
+  int32 sequence_number = 2;
+}
+
+// 心跳响应
+message HeartbeatResponse {
+  int64 client_timestamp = 1;
+  int64 server_timestamp = 2;
+  int32 sequence_number = 3;
+  int32 server_tick = 4;
+}

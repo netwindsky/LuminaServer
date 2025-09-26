@@ -1,0 +1,163 @@
+# Lumina游戏服务器配置文件
+
+server:
+  port: 8080
+
+spring:
+  application:
+    name: lumina-server
+  profiles:
+    active: dev
+
+# 游戏服务器配置
+game:
+  # 网关配置
+  gateway:
+    port: 9090
+    max-connections: 10000
+    idle-timeout: 300
+    heartbeat-interval: 30
+    thread-pool:
+      core-size: 10
+      max-size: 50
+    buffer-size: 8192
+
+  # Redis配置
+  redis:
+    host: localhost
+    port: 6379
+    database: 0
+    timeout: 3000
+    pool:
+      max-active: 100
+      max-idle: 20
+      min-idle: 5
+      max-wait: 3000
+
+  # MySQL配置
+  mysql:
+    url: jdbc:mysql://localhost:3306/lumina_game?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai
+    username: lumina_user
+    password: lumina_password
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    pool:
+      maximum-pool-size: 20
+      minimum-idle: 5
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+
+  # WebRTC配置
+  webrtc:
+    stun-servers:
+      - stun:stun.l.google.com:19302
+      - stun:stun1.l.google.com:19302
+    turn-servers:
+      - turn:your-turn-server.com:3478
+    ice-timeout: 10000
+    negotiation-timeout: 30000
+
+  # 匹配系统配置
+  matchmaking:
+    queue-timeout: 60000
+    min-players: 2
+    max-players: 10
+    skill-range: 200
+
+  # 房间配置
+  room:
+    tick-rate: 60
+    max-rooms: 1000
+    room-timeout: 1800
+    auto-destroy-empty: true
+
+  # 反作弊配置
+  anti-cheat:
+    max-input-rate: 100
+    max-speed-multiplier: 1.5
+    position-tolerance: 10.0
+    enable-server-validation: true
+
+# 日志配置
+logging:
+  level:
+    com.whale.lumina: DEBUG
+    org.apache.mina: INFO
+    org.springframework: INFO
+    root: INFO
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
+  file:
+    name: logs/lumina-server.log
+    max-size: 100MB
+    max-history: 30
+
+# 监控配置
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: always
+    metrics:
+      enabled: true
+    prometheus:
+      enabled: true
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+
+---
+# 开发环境配置
+spring:
+  profiles: dev
+  
+logging:
+  level:
+    com.whale.lumina: DEBUG
+    org.apache.mina: DEBUG
+
+game:
+  redis:
+    host: localhost
+    port: 6379
+  mysql:
+    url: jdbc:mysql://localhost:3306/lumina_game_dev?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai
+    username: dev_user
+    password: dev_password
+
+---
+# 生产环境配置
+spring:
+  profiles: prod
+  
+logging:
+  level:
+    com.whale.lumina: INFO
+    root: WARN
+  file:
+    name: /var/log/lumina-server/lumina-server.log
+
+game:
+  gateway:
+    max-connections: 50000
+    thread-pool:
+      core-size: 50
+      max-size: 200
+  redis:
+    host: redis-cluster.internal
+    port: 6379
+    pool:
+      max-active: 500
+      max-idle: 100
+  mysql:
+    url: jdbc:mysql://mysql-cluster.internal:3306/lumina_game?useUnicode=true&characterEncoding=utf8&useSSL=true&serverTimezone=Asia/Shanghai
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+    pool:
+      maximum-pool-size: 100
+      minimum-idle: 20
