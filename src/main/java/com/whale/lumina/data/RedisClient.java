@@ -31,31 +31,31 @@ public class RedisClient {
 
     private static final Logger logger = LoggerFactory.getLogger(RedisClient.class);
 
-    @Value("${game.redis.host:localhost}")
+    @Value("${lumina.redis.host:localhost}")
     private String host;
 
-    @Value("${game.redis.port:6379}")
+    @Value("${lumina.redis.port:6379}")
     private int port;
 
-    @Value("${game.redis.password:}")
+    @Value("${lumina.redis.password:}")
     private String password;
 
-    @Value("${game.redis.database:0}")
+    @Value("${lumina.redis.database:0}")
     private int database;
 
-    @Value("${game.redis.timeout:2000}")
+    @Value("${lumina.redis.timeout:2000}")
     private int timeout;
 
-    @Value("${game.redis.pool.max-total:50}")
+    @Value("${lumina.redis.pool.max-total:50}")
     private int maxTotal;
 
-    @Value("${game.redis.pool.max-idle:20}")
+    @Value("${lumina.redis.pool.max-idle:20}")
     private int maxIdle;
 
-    @Value("${game.redis.pool.min-idle:5}")
+    @Value("${lumina.redis.pool.min-idle:5}")
     private int minIdle;
 
-    @Value("${game.redis.pool.max-wait:3000}")
+    @Value("${lumina.redis.pool.max-wait:3000}")
     private long maxWait;
 
     private JedisPool jedisPool;
@@ -347,6 +347,16 @@ public class RedisClient {
     }
 
     /**
+     * 获取有序集合范围内的成员
+     */
+    public Set<String> zrange(String key, long start, long stop) {
+        return execute(jedis -> {
+            Set<String> result = (Set<String>) jedis.zrange(key, start, stop);
+            return result;
+        });
+    }
+
+    /**
      * 获取有序集合范围内的成员（返回List）
      */
     public List<String> zrangeAsList(String key, long start, long stop) {
@@ -378,7 +388,10 @@ public class RedisClient {
      * 按分数降序获取有序集合范围内的成员
      */
     public Set<String> zrevrange(String key, long start, long stop) {
-        return execute(jedis -> jedis.zrevrange(key, start, stop));
+        return execute(jedis -> {
+            Set<String> result = (Set<String>) jedis.zrevrange(key, start, stop);
+            return result;
+        });
     }
 
     // ========== 发布订阅 ==========

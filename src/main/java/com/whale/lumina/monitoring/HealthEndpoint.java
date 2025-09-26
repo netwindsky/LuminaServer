@@ -546,12 +546,12 @@ public class HealthEndpoint {
             details.put("activeSessions", activeSessions);
             details.put("totalMessages", signalingHandler.getTotalSignalingMessages());
             
-            return new ComponentHealthStatus("SignalingHandler", HealthStatus.UP, details);
+            return new ComponentHealthStatus("SignalingHandler", HealthStatus.Status.UP, details);
         } catch (Exception e) {
             logger.error("检查信令处理器组件健康状态失败", e);
             Map<String, Object> details = new HashMap<>();
             details.put("error", e.getMessage());
-            return new ComponentHealthStatus("SignalingHandler", HealthStatus.DOWN, details);
+            return new ComponentHealthStatus("SignalingHandler", HealthStatus.Status.DOWN, details);
         }
     }
 

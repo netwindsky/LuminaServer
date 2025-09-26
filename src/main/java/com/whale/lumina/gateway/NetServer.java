@@ -45,22 +45,22 @@ public class NetServer extends IoHandlerAdapter {
     @Autowired
     private GatewayController gatewayController;
 
-    @Value("${game.gateway.port:8080}")
+    @Value("${lumina.gateway.port:8080}")
     private int port;
 
-    @Value("${game.gateway.bind-address:0.0.0.0}")
+    @Value("${lumina.gateway.bind-address:0.0.0.0}")
     private String bindAddress;
 
-    @Value("${game.gateway.idle-timeout:300}")
+    @Value("${lumina.gateway.idle-timeout:300}")
     private int idleTimeout;
 
-    @Value("${game.gateway.thread-pool.core-size:10}")
+    @Value("${lumina.gateway.thread-pool.core-size:10}")
     private int corePoolSize;
 
-    @Value("${game.gateway.thread-pool.max-size:50}")
+    @Value("${lumina.gateway.thread-pool.max-size:50}")
     private int maxPoolSize;
 
-    @Value("${game.gateway.buffer-size:8192}")
+    @Value("${lumina.gateway.buffer-size:8192}")
     private int bufferSize;
 
     private IoAcceptor acceptor;

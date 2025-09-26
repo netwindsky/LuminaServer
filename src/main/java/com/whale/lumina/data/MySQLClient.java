@@ -9,12 +9,15 @@ import javax.sql.DataSource;
 import java.sql.*;
 import java.util.*;
 
+import org.springframework.stereotype.Component;
+
 /**
  * MySQL数据库客户端
  * 提供统一的数据库访问接口，封装常用的CRUD操作
  * 
  * @author Lumina Team
  */
+@Component
 public class MySQLClient {
     
     private static final Logger logger = Logger.getLogger(MySQLClient.class.getName());

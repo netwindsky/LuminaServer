@@ -20,6 +20,7 @@ import java.util.concurrent.atomic.AtomicLong;
  * @author Lumina Team
  */
 @Component
+@SuppressWarnings("unchecked")
 public class SignalingHandler {
 
     private static final Logger logger = LoggerFactory.getLogger(SignalingHandler.class);
@@ -50,10 +51,9 @@ public class SignalingHandler {
     }
 
     // ========== 信令会话管理 ==========
-
     /**
      * 创建信令会话
-     * 
+     *
      * @param roomId 房间ID
      * @param participants 参与者列表
      * @return 会话ID
@@ -61,15 +61,15 @@ public class SignalingHandler {
      */
     public String createSignalingSession(String roomId, List<String> participants) throws GameException {
         if (roomId == null || roomId.isEmpty()) {
-            throw new GameException(ErrorCodes.INVALID_PARAMETER, "房间ID不能为空");
+            throw new GameException(ErrorCodes.SYSTEM_ERROR, "房间ID不能为空");
         }
-        
+
         if (participants == null || participants.isEmpty()) {
-            throw new GameException(ErrorCodes.INVALID_PARAMETER, "参与者列表不能为空");
+            throw new GameException(ErrorCodes.SYSTEM_ERROR, "参与者列表不能为空");
         }
 
         String sessionId = "signaling_" + nextSessionId.getAndIncrement();
-        
+
         try {
             SignalingSession session = new SignalingSession(sessionId, roomId, participants.get(0));
             // 添加所有参与者
@@ -77,20 +77,21 @@ public class SignalingHandler {
                 session.addParticipant(participant);
             }
             activeSessions.put(sessionId, session);
-            
+
             // 保存到存储
             signalingStore.saveSession(session);
-            
-            logger.info("信令会话已创建: sessionId={}, roomId={}, participants={}", 
+
+            logger.info("信令会话已创建: sessionId={}, roomId={}, participants={}",
                        sessionId, roomId, participants.size());
-            
+
             return sessionId;
-            
+
         } catch (Exception e) {
             logger.error("创建信令会话失败: roomId={}, participants={}", roomId, participants, e);
-            throw new GameException(ErrorCodes.INTERNAL_ERROR, "创建信令会话失败: " + e.getMessage());
+            throw new GameException(ErrorCodes.SYSTEM_ERROR, "创建信令会话失败: " + e.getMessage());
         }
     }
+
 
     /**
      * 结束信令会话
@@ -156,52 +157,55 @@ public class SignalingHandler {
     }
 
     // ========== 信令消息处理 ==========
-
     /**
      * 处理Offer消息
-     * 
+     *
      * @param sessionId 会话ID
      * @param fromUserId 发送者ID
      * @param toUserId 接收者ID
      * @param offer Offer数据
      * @throws GameException 处理失败时抛出
      */
-    public void handleOffer(String sessionId, String fromUserId, String toUserId, 
+    public void handleOffer(String sessionId, String fromUserId, String toUserId,
                            OfferMessage offer) throws GameException {
         SignalingSession session = getSignalingSession(sessionId);
         if (session == null) {
-            throw new GameException(ErrorCodes.ROOM_NOT_FOUND, "信令会话不存在: " + sessionId);
+            throw new GameException(ErrorCodes.SYSTEM_ERROR, "信令会话不存在: " + sessionId);
         }
 
         try {
             // 验证参与者
             if (!session.hasParticipant(fromUserId) || !session.hasParticipant(toUserId)) {
-                throw new GameException(ErrorCodes.PLAYER_NOT_FOUND, "参与者不在会话中");
+                throw new GameException(ErrorCodes.SYSTEM_ERROR, "参与者不在会话中");
             }
 
             // 创建信令消息
+            Map<String, Object> offerData = new HashMap<>();
+            offerData.put("sdp", offer.getSdp());
+            offerData.put("type", offer.getType());
             SignalingMessage message = new SignalingMessage(
-                SignalingMessage.Type.OFFER, fromUserId, toUserId, offer);
-            message.setType(getMessageTypeString(SignalingMessage.Type.OFFER));
-            
+                sessionId, SignalingMessage.Type.OFFER, fromUserId, toUserId, offerData);
+            // 类型已在构造函数中设置，无需再次设置
+
             // 处理消息
             session.addMessage(message);
-            
+
             // 转发给目标用户
             forwardMessage(sessionId, message);
-            
+
             totalSignalingMessages.incrementAndGet();
             totalOffers.incrementAndGet();
-            
-            logger.debug("处理Offer消息: sessionId={}, from={}, to={}", 
+
+            logger.debug("处理Offer消息: sessionId={}, from={}, to={}",
                         sessionId, fromUserId, toUserId);
-            
+
         } catch (Exception e) {
-            logger.error("处理Offer消息失败: sessionId={}, from={}, to={}", 
+            logger.error("处理Offer消息失败: sessionId={}, from={}, to={}",
                         sessionId, fromUserId, toUserId, e);
             throw new GameException(ErrorCodes.SYSTEM_ERROR, "处理Offer消息失败: " + e.getMessage());
         }
     }
+
 
     /**
      * 处理Answer消息
@@ -216,19 +220,22 @@ public class SignalingHandler {
                             AnswerMessage answer) throws GameException {
         SignalingSession session = getSignalingSession(sessionId);
         if (session == null) {
-            throw new GameException(ErrorCodes.ROOM_NOT_FOUND, "信令会话不存在: " + sessionId);
+            throw new GameException(ErrorCodes.SYSTEM_ERROR, "信令会话不存在: " + sessionId);
         }
 
         try {
             // 验证参与者
             if (!session.hasParticipant(fromUserId) || !session.hasParticipant(toUserId)) {
-                throw new GameException(ErrorCodes.PLAYER_NOT_FOUND, "参与者不在会话中");
+                throw new GameException(ErrorCodes.SYSTEM_ERROR, "参与者不在会话中");
             }
 
             // 创建信令消息
+            Map<String, Object> answerData = new HashMap<>();
+            answerData.put("sdp", answer.getSdp());
+            answerData.put("type", answer.getType());
             SignalingMessage message = new SignalingMessage(
-                SignalingMessage.Type.ANSWER, fromUserId, toUserId, answer);
-            message.setType(getMessageTypeString(SignalingMessage.Type.ANSWER));
+                sessionId, SignalingMessage.Type.ANSWER, fromUserId, toUserId, answerData);
+            // 类型已在构造函数中设置，无需再次设置
             
             // 处理消息
             session.addMessage(message);
@@ -249,6 +256,7 @@ public class SignalingHandler {
         }
     }
 
+
     /**
      * 处理ICE Candidate消息
      * 
@@ -262,19 +270,23 @@ public class SignalingHandler {
                                CandidateMessage candidate) throws GameException {
         SignalingSession session = getSignalingSession(sessionId);
         if (session == null) {
-            throw new GameException(ErrorCodes.ROOM_NOT_FOUND, "信令会话不存在: " + sessionId);
+            throw new GameException(ErrorCodes.SYSTEM_ERROR, "信令会话不存在: " + sessionId);
         }
 
         try {
             // 验证参与者
             if (!session.hasParticipant(fromUserId) || !session.hasParticipant(toUserId)) {
-                throw new GameException(ErrorCodes.PLAYER_NOT_FOUND, "参与者不在会话中");
+                throw new GameException(ErrorCodes.SYSTEM_ERROR, "参与者不在会话中");
             }
 
             // 创建信令消息
+            Map<String, Object> candidateData = new HashMap<>();
+            candidateData.put("candidate", candidate.getCandidate());
+            candidateData.put("sdpMid", candidate.getSdpMid());
+            candidateData.put("sdpMLineIndex", candidate.getSdpMLineIndex());
             SignalingMessage message = new SignalingMessage(
-                SignalingMessage.Type.CANDIDATE, fromUserId, toUserId, candidate);
-            message.setType(getMessageTypeString(SignalingMessage.Type.CANDIDATE));
+                sessionId, SignalingMessage.Type.CANDIDATE, fromUserId, toUserId, candidateData);
+            // 类型已在构造函数中设置，无需再次设置
             
             // 处理消息
             session.addMessage(message);
@@ -308,24 +320,30 @@ public class SignalingHandler {
                                   Object customData) throws GameException {
         SignalingSession session = getSignalingSession(sessionId);
         if (session == null) {
-            throw new GameException(ErrorCodes.ROOM_NOT_FOUND, "信令会话不存在: " + sessionId);
+            throw new GameException(ErrorCodes.SYSTEM_ERROR, "信令会话不存在: " + sessionId);
         }
 
         try {
             // 验证发送者
             if (!session.hasParticipant(fromUserId)) {
-                throw new GameException(ErrorCodes.PLAYER_NOT_FOUND, "发送者不在会话中");
+                throw new GameException(ErrorCodes.SYSTEM_ERROR, "发送者不在会话中");
             }
 
             // 如果指定了接收者，验证接收者
             if (toUserId != null && !session.hasParticipant(toUserId)) {
-                throw new GameException(ErrorCodes.PLAYER_NOT_FOUND, "接收者不在会话中");
+                throw new GameException(ErrorCodes.SYSTEM_ERROR, "接收者不在会话中");
             }
 
             // 创建信令消息
+            Map<String, Object> dataMap = new HashMap<>();
+            if (customData instanceof Map) {
+                dataMap.putAll((Map<? extends String, ?>) customData);
+            } else {
+                dataMap.put("data", customData);
+            }
             SignalingMessage message = new SignalingMessage(
-                SignalingMessage.Type.CUSTOM, fromUserId, toUserId, customData);
-            message.setType(getMessageTypeString(SignalingMessage.Type.CUSTOM));
+                sessionId, SignalingMessage.Type.CUSTOM, fromUserId, toUserId, dataMap);
+            // 类型已在构造函数中设置，无需再次设置
             
             // 处理消息
             session.addMessage(message);
@@ -397,7 +415,7 @@ public class SignalingHandler {
                 if (!participantId.equals(message.getFromUserId())) {
                     // 创建针对每个参与者的消息副本
                     SignalingMessage broadcastMessage = new SignalingMessage(
-                        message.getType(), message.getFromUserId(), participantId, message.getData());
+                        sessionId, message.getType(), message.getFromUserId(), participantId, message.getData());
                     
                     forwardMessage(sessionId, broadcastMessage);
                 }
@@ -644,7 +662,7 @@ public class SignalingHandler {
      * @return 字符串表示
      */
     private String getMessageTypeString(SignalingMessage.Type type) {
-        return type.toString();
+        return type.name();
     }
 }
 

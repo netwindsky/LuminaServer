@@ -6,6 +6,7 @@ import com.whale.lumina.player.Player;
 import com.whale.lumina.player.PlayerRepository;
 import com.whale.lumina.room.RoomManager;
 import com.whale.lumina.room.RoomConfig;
+import com.whale.lumina.room.Room;
 import com.whale.lumina.websocket.WebSocketManager;
 import com.whale.lumina.notification.NotificationService;
 import org.slf4j.Logger;
@@ -220,8 +221,6 @@ public class MatchDispatcher {
     private String createGameRoom(MatchResult matchResult) {
         try {
             RoomConfig roomConfig = createRoomConfig(matchResult);
-            // 获取第一个玩家作为房间创建者
-            String creatorId = matchResult.getPlayerIds().get(0);
             // 获取第一个玩家作为房间创建者
             String creatorId = matchResult.getPlayerIds().get(0);
             Room room = roomManager.createRoom(creatorId, roomConfig);
